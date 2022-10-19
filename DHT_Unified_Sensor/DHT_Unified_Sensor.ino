@@ -1,8 +1,9 @@
 
+
 // - DHT Sensor Library: https://github.com/adafruit/DHT-sensor-library
 // - Adafruit Unified Sensor Lib: https://github.com/adafruit/Adafruit_Sensor
 
-const unsigned long PERIOD_ALARM = 60000UL;
+const unsigned long PERIOD_ALARM = 10000UL;
 unsigned long time_now_alarm = 0UL;
 
 const unsigned long PERIOD_DATA = 5000UL;
@@ -145,9 +146,19 @@ void loop() {
   //Funciona sin preocuparse del overflow
   if(millis() - time_now_alarm > PERIOD_ALARM){
     time_now_alarm = millis();
-    if (temperatura.toInt() >= 23) {
-      //ID del grupo de telegram
-      miBot.sendMessage(GroupId, "ALERTA!!!!! \nTemperatura: " + temperatura + "°C" );
+    
+    if (temperatura.toInt() >= limitTemperature)
+    {
+      miBot.sendMessage(GroupId, "\U0000203C\U0000203C  ALERTA DE TEMPERATURA  \U0000203C\U0000203C \n  Temperatura límite superada\U00002757 \n\n  Temperatura límite: " + String(limitTemperature) + " °C \n  Temperatura actual: " + temperatura + " °C");
+      // miBot.sendMessage(GroupId, "**ALERTA** \U0000203C \U0000203C \nTemperatura: " + temperatura + "°C" );
+    }
+    else
+    {
+      if (temperatura.toInt() >= warningTemperature)
+      { 
+        miBot.sendMessage(GroupId, "\U000026A0\U000026A0ADVERTENCIA DE TEMPERATURA\U000026A0\U000026A0 \n  La Temperatura límite está a punto de ser superada \U000026A0 \n\n  Temperatura límite: " + String(limitTemperature) + " °C \n  Temperatura actual: " + temperatura + " °C");
+        // miBot.sendMessage(msg.group.id, "\U000026A0\U000026A0ADVERTENCIA DE TEMPERATURA\U000026A0\U000026A0 \n  La Temperatura límite está a punto de ser superada \U000026A0 \n\n  Temperatura límite: " + temperatura + " °C \n  Temperatura actual: " + temperatura + " °C");
+      }
     }
   }
 
@@ -172,7 +183,7 @@ void loop() {
       }
       else
       {
-        miBot.sendMessage(msg.group.id, "Escribe 'opciones' para desplegar la tabla con todas las opciones disponibles.");
+        miBot.sendMessage(msg.group.id, "Escriba 'opciones' para desplegar la tabla con todas las opciones disponibles. Recuerde que cada petición demora aproximadamente 3 segundos en responderse.");
       }
     } 
     else if (msg.messageType == CTBotMessageQuery) 
@@ -190,18 +201,18 @@ void loop() {
       {
         // miBot.endQuery(msg.callbackQueryID, "La temperatura es ", true);
         if (isnan(eventT.temperature))
-          miBot.sendMessage(msg.group.id, "Error! No se pudo obtener la temperatura" );
+          miBot.sendMessage(msg.group.id, msg.sender.firstName + ": " + "Error! No se pudo obtener la temperatura" );
         else
-          miBot.sendMessage(msg.group.id, "La temperatura es " + temperatura + "°C" );
+          miBot.sendMessage(msg.group.id, msg.sender.firstName + ": " + "La temperatura es " + temperatura + "°C" );
       } 
       else if (msg.callbackQueryData.equals("humedad")) 
       {
         // Serial.println(" Humedad");
         //digitalWrite(led, LOW);
         if (isnan(eventH.relative_humidity))
-          miBot.sendMessage(msg.group.id, "Error! No se pudo obtener la humedad" );
+          miBot.sendMessage(msg.group.id, msg.sender.firstName + ": " +"Error! No se pudo obtener la humedad" );
         else
-          miBot.sendMessage(msg.group.id, "La Humedad es " + humedad + "%" );
+          miBot.sendMessage(msg.group.id, msg.sender.firstName + ": " +"La Humedad es " + humedad + "%" );
         // miBot.endQuery(msg.callbackQueryID, "La humedad es ");
       }
       else if (msg.callbackQueryData.equals("apagar_led")) 
@@ -209,7 +220,7 @@ void loop() {
         if (estado_led == 1)
         {
           digitalWrite(Led, LOW);
-          miBot.sendMessage(msg.group.id, "Led apagado");
+          miBot.sendMessage(msg.group.id, msg.sender.firstName + ": " +"Led apagado");
           miBot.endQuery(msg.callbackQueryID, "Led apagado");
         }
         else
@@ -222,7 +233,7 @@ void loop() {
         if (estado_led == 0)
         {
           digitalWrite(Led, HIGH);
-          miBot.sendMessage(msg.group.id, "Led encendido");
+          miBot.sendMessage(msg.group.id, msg.sender.firstName + ": " + "Led encendido");
           miBot.endQuery(msg.callbackQueryID, "Led encendido");
         }
         else
