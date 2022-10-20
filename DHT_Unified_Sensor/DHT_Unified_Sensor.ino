@@ -1,5 +1,3 @@
-
-
 // - DHT Sensor Library: https://github.com/adafruit/DHT-sensor-library
 // - Adafruit Unified Sensor Lib: https://github.com/adafruit/Adafruit_Sensor
 
@@ -27,6 +25,8 @@ template<class T> inline Print &operator <<(Print &obj, T arg) {
 
 CTBot miBot;
 CTBotInlineKeyboard miTeclado;
+CTBotReplyKeyboard miTecladoFijo;   // reply keyboard object helper
+bool isKeyboardActive;      // store if the reply keyboard is shown
 
 int Led = 2;
 #define DHTPIN 4     // Digital pin connected to the DHT sensor 
@@ -95,7 +95,9 @@ void setup() {
   miTeclado.addButton("Encender Led", "encender_led", CTBotKeyboardButtonQuery);
   miTeclado.addButton("Apagar Led", "apagar_led", CTBotKeyboardButtonQuery);
   //miTeclado.addButton("mira documentación", "https://nocheprogramacion.com/", CTBotKeyboardButtonURL);
-
+  miTecladoFijo.addButton("Opciones");
+  miTecladoFijo.enableResize();
+	isKeyboardActive = false;
 }
 
 void loop() {
@@ -146,18 +148,25 @@ void loop() {
   //Funciona sin preocuparse del overflow
   if(millis() - time_now_alarm > PERIOD_ALARM){
     time_now_alarm = millis();
-    
-    if (temperatura.toInt() >= limitTemperature)
+
+    if (isnan(eventT.temperature) || isnan(eventH.relative_humidity))
     {
-      miBot.sendMessage(GroupId, "\U0000203C\U0000203C  ALERTA DE TEMPERATURA  \U0000203C\U0000203C \n  Temperatura límite superada\U00002757 \n\n  Temperatura límite: " + String(limitTemperature) + " °C \n  Temperatura actual: " + temperatura + " °C");
-      // miBot.sendMessage(GroupId, "**ALERTA** \U0000203C \U0000203C \nTemperatura: " + temperatura + "°C" );
+      miBot.sendMessage(GroupId, "\U0000274C  ERROR  \U0000274C \n\n NO SE PUDO MEDIR LA TEMPERATURA Y HUMEDAD");
     }
-    else
+    else 
     {
-      if (temperatura.toInt() >= warningTemperature)
-      { 
-        miBot.sendMessage(GroupId, "\U000026A0\U000026A0ADVERTENCIA DE TEMPERATURA\U000026A0\U000026A0 \n  La Temperatura límite está a punto de ser superada \U000026A0 \n\n  Temperatura límite: " + String(limitTemperature) + " °C \n  Temperatura actual: " + temperatura + " °C");
-        // miBot.sendMessage(msg.group.id, "\U000026A0\U000026A0ADVERTENCIA DE TEMPERATURA\U000026A0\U000026A0 \n  La Temperatura límite está a punto de ser superada \U000026A0 \n\n  Temperatura límite: " + temperatura + " °C \n  Temperatura actual: " + temperatura + " °C");
+      if (temperatura.toInt() >= limitTemperature)
+      {
+        miBot.sendMessage(GroupId, "\U0000203C\U0000203C  ALERTA DE TEMPERATURA  \U0000203C\U0000203C \n  Temperatura límite superada\U00002757 \n\n  Temperatura límite: " + String(limitTemperature) + " °C \n  Temperatura actual: " + temperatura + " °C");
+        // miBot.sendMessage(GroupId, "**ALERTA** \U0000203C \U0000203C \nTemperatura: " + temperatura + "°C" );
+      }
+      else
+      {
+        if (temperatura.toInt() >= warningTemperature)
+        { 
+          miBot.sendMessage(GroupId, "\U000026A0\U000026A0ADVERTENCIA DE TEMPERATURA\U000026A0\U000026A0 \n  La Temperatura límite está a punto de ser superada \U000026A0 \n\n  Temperatura límite: " + String(limitTemperature) + " °C \n  Temperatura actual: " + temperatura + " °C");
+          // miBot.sendMessage(msg.group.id, "\U000026A0\U000026A0ADVERTENCIA DE TEMPERATURA\U000026A0\U000026A0 \n  La Temperatura límite está a punto de ser superada \U000026A0 \n\n  Temperatura límite: " + temperatura + " °C \n  Temperatura actual: " + temperatura + " °C");
+        }
       }
     }
   }
@@ -179,7 +188,15 @@ void loop() {
       Serial << "\nOpcion escogida: " <<  msg.text << "\n" ;
       if ( msg.text.equalsIgnoreCase("opciones") )
       {
-        miBot.sendMessage(msg.group.id, "Opciones disponibles", miTeclado);
+        if (isKeyboardActive)
+        { 
+          miBot.sendMessage(msg.group.id, "Opciones disponibles", miTeclado);
+        }
+        else
+        {
+          miBot.sendMessage(msg.group.id, "Botón de opciones desplegado", miTecladoFijo);
+          isKeyboardActive = true;
+        }
       }
       else
       {
